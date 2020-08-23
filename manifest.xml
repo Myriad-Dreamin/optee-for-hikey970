@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+        <remote name="github"   fetch="https://github.com" />
+        <remote name="savannah" fetch="git://git.savannah.gnu.org" />
+
+        <default remote="github" revision="master" />
+
+        <!-- My Repo -->
+        <project path="build"                 name="Myriad-Dreamin/optee-for-hikey970.git">
+            <linkfile src="scripts/commands.mk" dest="Makefile" />
+        </project>
+
+        <!-- OP-TEE gits -->
+        <project path="optee_client"          name="OP-TEE/optee_client.git" />
+        <project path="optee_os"              name="OP-TEE/optee_os.git" />
+        <project path="optee_test"            name="OP-TEE/optee_test.git" />
+
+        <!-- linaro-swg gits -->
+        <project path="optee_examples"        name="linaro-swg/optee_examples.git" />
+        <project path="patches_hikey"         name="linaro-swg/patches_hikey.git"             revision="d9c07f0ac0ce5fe57d367be82b8673aae8e81e96" />
+
+        <!-- Misc gits -->
+        <project path="buildroot"             name="buildroot/buildroot.git"                  revision="95942f5fcd35d783a49adce621ccf33480f1c88c" />
+        <project path="grub"                  name="grub.git"                                 revision="refs/tags/grub-2.02" clone-depth="1" remote="savannah" />
+        <project path="linux"                 name="linaro-swg/linux.git"                     revision="optee" clone-depth="1" />
+
+        <project path="edk2"                  name="96boards-hikey/edk2.git"                  revision="hikey970_v1.0" />
+        <project path="l-loader"              name="96boards-hikey/l-loader.git"              revision="hikey970_v1.0" />
+        <project path="OpenPlatformPkg"       name="96boards-hikey/OpenPlatformPkg.git"       revision="hikey970_v1.0" />
+        <project path="uefi-tools"            name="96boards-hikey/uefi-tools.git"            revision="hikey970_v1.0" />
+        <project path="tools-images-hikey960" name="96boards-hikey/tools-images-hikey970.git" revision="master" />
+        <project path="trusted-firmware-a"    name="96boards-hikey/arm-trusted-firmware.git"  revision="hikey970_v1.0" />
+</manifest>
