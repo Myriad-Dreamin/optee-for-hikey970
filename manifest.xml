@@ -29,5 +29,5 @@
         <project path="OpenPlatformPkg"       name="96boards-hikey/OpenPlatformPkg.git"       revision="hikey970_v1.0" />
         <project path="uefi-tools"            name="Mani-Sadhasivam/uefi-tools.git"           revision="hikey970_v1.0" />
         <project path="tools-images-hikey960" name="96boards-hikey/tools-images-hikey970.git" revision="hikey970_v1.0" />
-        <project path="trusted-firmware-a"    name="96boards-hikey/arm-trusted-firmware.git"  revision="hikey970_v1.0" />
+        <project path="arm-trusted-firmware"    name="96boards-hikey/arm-trusted-firmware.git"  revision="hikey970_v1.0" />
 </manifest>
