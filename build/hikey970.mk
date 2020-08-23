@@ -36,19 +36,19 @@ EDK2_BUILD			?= RELEASE
 endif
 
 ## UEFI Changed
-EDK2_BIN			?= $(EDK2_PATH)/Build/HiKey$$$$$$$$/$(EDK2_BUILD)_$(EDK2_TOOLCHAIN)/FV/BL33_AP_UEFI.fd
+EDK2_BIN			?= $(EDK2_PATH)/Build/HiKey970/$(EDK2_BUILD)_$(EDK2_TOOLCHAIN)/FV/BL33_AP_UEFI.fd
 OPENPLATPKG_PATH		?= $(ROOT)/OpenPlatformPkg
 
 OUT_PATH			?=$(ROOT)/out
 
 ### LPM Changed
-MCUIMAGE_BIN			?= $(OPENPLATPKG_PATH)/Platforms/Hisilicon/HiKey$$$$$$$$/Binary/lpm3.img
+MCUIMAGE_BIN			?= $(OPENPLATPKG_PATH)/Platforms/Hisilicon/HiKey970/Binary/lpm3.img
 BOOT_IMG			?=$(ROOT)/out/boot-fat.uefi.img
 GRUB_PATH			?=$(ROOT)/grub
 LLOADER_PATH			?=$(ROOT)/l-loader
 
 ### Image Tools Changed
-IMAGE_TOOLS_PATH		?=$(ROOT)/tools-images-hikey$$$$$$$$
+IMAGE_TOOLS_PATH		?=$(ROOT)/tools-images-hikey970
 IMAGE_TOOLS_CONFIG		?=$(OUT_PATH)/config
 PATCHES_PATH			?=$(ROOT)/patches_hikey
 STRACE_PATH			?=$(ROOT)/strace
@@ -82,6 +82,7 @@ prepare-cleaner:
 ARM_TF_EXPORTS ?= \
 	CROSS_COMPILE="$(CCACHE)$(AARCH64_CROSS_COMPILE)"
 
+# platform changed **!important not verified
 ARM_TF_FLAGS ?= \
 	BL32=$(OPTEE_OS_HEADER_V2_BIN) \
 	BL32_EXTRA1=$(OPTEE_OS_PAGER_V2_BIN) \
@@ -89,7 +90,7 @@ ARM_TF_FLAGS ?= \
 	BL33=$(EDK2_BIN) \
 	SCP_BL2=$(MCUIMAGE_BIN) \
 	DEBUG=$(DEBUG) \
-	PLAT=hikey$$$$$$$$ \
+	PLAT=hikey970 \
 	SPD=opteed
 
 ifeq ($(CFG_CONSOLE_UART),5)
@@ -108,9 +109,14 @@ arm-tf-clean:
 # EDK2 / Tianocore
 ################################################################################
 EDK2_ARCH ?= AARCH64
-EDK2_DSC ?= OpenPlatformPkg/Platforms/Hisilicon/HiKey$$$$$$$$/HiKey$$$$$$$$.dsc
-EDK2_TOOLCHAIN ?= GCC49
 
+# core desc changed
+EDK2_DSC ?= OpenPlatformPkg/Platforms/Hisilicon/HiKey970/HiKey970.dsc
+# version changed
+# EDK2_TOOLCHAIN ?= GCC49
+EDK2_TOOLCHAIN ?= GCC5
+
+# uart list ?
 ifeq ($(CFG_CONSOLE_UART),5)
 	EDK2_BUILDFLAGS += -DSERIAL_BASE=0xFDF05000
 endif
@@ -120,15 +126,21 @@ define edk2-call
 	build -n `getconf _NPROCESSORS_ONLN` -a $(EDK2_ARCH) \
 		-t $(EDK2_TOOLCHAIN) -p $(EDK2_DSC) \
 		-b $(EDK2_BUILD) $(EDK2_BUILDFLAGS)
-endef
+endef		
+
+
+UEFI_TOOLS_DIR ?= $(ROOT)/uefi-tools
+TMP_EDK2_BUILD ?= DEBUG
 
 .PHONY: edk2
 edk2:
 	cd $(EDK2_PATH) && rm -rf OpenPlatformPkg && \
 		ln -s $(OPENPLATPKG_PATH)
-	set -e && cd $(EDK2_PATH) && source edksetup.sh && \
-		$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools && \
-		$(call edk2-call)
+	cd $(EDK2_PATH) && $(UEFI_TOOLS_DIR)/edk2-build.sh -v -b $(TMP_EDK2_BUILD) -e $(EDK2_PATH) \
+		-a $(ARM_TF_PATH) -c $(ROOT)/build/platforms.config hikey970
+	# set -e && cd $(EDK2_PATH) && source edksetup.sh && \
+	# 	$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools && \
+	# 	$(call edk2-call)
 
 .PHONY: edk2-clean
 edk2-clean:
@@ -161,6 +173,7 @@ linux-gen_init_cpio: linux-defconfig
 		LOCALVERSION= \
 		gen_init_cpio
 
+# ?, device tree b
 LINUX_COMMON_FLAGS += ARCH=arm64 Image modules hisilicon/hi3660-hikey$$$$$$$$.dtb
 
 .PHONY: linux
@@ -182,6 +195,8 @@ linux-cleaner: linux-cleaner-common
 ################################################################################
 # OP-TEE
 ################################################################################
+
+### OPTEE_OS PLATFORM
 OPTEE_OS_COMMON_FLAGS += PLATFORM=hikey-hikey$$$$$$$$ \
 			CFG_CONSOLE_UART=$(CFG_CONSOLE_UART) \
 			CFG_SECURE_DATA_PATH=n
