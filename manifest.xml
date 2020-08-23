@@ -7,7 +7,7 @@
         <default remote="github" revision="master" />
 
         <!-- My Repo -->
-        <project path="build"                 name="Myriad-Dreamin/optee-for-hikey970.git">
+        <project path="optee-for-hikey970"                 name="Myriad-Dreamin/optee-for-hikey970.git">
             <linkfile src="scripts/commands.mk" dest="Makefile" />
         </project>
 
