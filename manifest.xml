@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
         <remote name="github"   fetch="https://github.com" />
-        <remote name="savannah" fetch="git://git.savannah.gnu.org" />
+        <!--fetch="git://git.savannah.gnu.org"-->
+        <remote name="savannah" fetch="https://git.savannah.gnu.org/git" />
 
         <default remote="github" revision="master" />
 
@@ -29,5 +30,5 @@
         <project path="OpenPlatformPkg"       name="96boards-hikey/OpenPlatformPkg.git"       revision="hikey970_v1.0" />
         <project path="uefi-tools"            name="Mani-Sadhasivam/uefi-tools.git"           revision="hikey970_v1.0" />
         <project path="tools-images-hikey960" name="96boards-hikey/tools-images-hikey970.git" revision="hikey970_v1.0" />
-        <project path="arm-trusted-firmware"    name="96boards-hikey/arm-trusted-firmware.git"  revision="hikey970_v1.0" clone-depth="1" />
+        <project path="arm-trusted-firmware"  name="96boards-hikey/arm-trusted-firmware.git"  revision="hikey970_v1.0" />
 </manifest>
