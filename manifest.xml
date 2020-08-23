@@ -27,7 +27,7 @@
         <project path="edk2"                  name="96boards-hikey/edk2.git"                  revision="hikey970_v1.0" />
         <project path="l-loader"              name="96boards-hikey/l-loader.git"              revision="hikey970_v1.0" />
         <project path="OpenPlatformPkg"       name="96boards-hikey/OpenPlatformPkg.git"       revision="hikey970_v1.0" />
-        <project path="uefi-tools"            name="96boards-hikey/uefi-tools.git"            revision="hikey970_v1.0" />
-        <project path="tools-images-hikey960" name="96boards-hikey/tools-images-hikey970.git" revision="master" />
+        <project path="uefi-tools"            name="Mani-Sadhasivam/uefi-tools.git"           revision="hikey970_v1.0" />
+        <project path="tools-images-hikey960" name="96boards-hikey/tools-images-hikey970.git" revision="hikey970_v1.0" />
         <project path="trusted-firmware-a"    name="96boards-hikey/arm-trusted-firmware.git"  revision="hikey970_v1.0" />
 </manifest>
