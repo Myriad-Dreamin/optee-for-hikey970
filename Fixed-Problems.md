@@ -90,6 +90,8 @@ make[1]: Leaving directory '/home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKe
 
 强制修改编译版本为`DEBUG`可能解决此问题。
 
+PS: 实际上，当你修改为`DEBUG`后会产生新的问题，如下一个问题所示。如果apply了下文提到的commit，则`RELEASE`版本似乎也能编译通过。
+
 ###### AARCH64 small code model requires identical ELF and PE/COFF section offsets modulo 4 KB. 
 
 ```

@@ -116,10 +116,10 @@ EDK2_DSC ?= OpenPlatformPkg/Platforms/Hisilicon/HiKey970/HiKey970.dsc
 # EDK2_TOOLCHAIN ?= GCC49
 EDK2_TOOLCHAIN ?= GCC5
 
-# uart list ?
-ifeq ($(CFG_CONSOLE_UART),5)
-	EDK2_BUILDFLAGS += -DSERIAL_BASE=0xFDF05000
-endif
+# Not Exists This Option in HiKey970
+# ifeq ($(CFG_CONSOLE_UART),5)
+# 	EDK2_BUILDFLAGS += -DSERIAL_BASE=0xFDF05000
+# endif
 
 define edk2-call
 	$(EDK2_TOOLCHAIN)_$(EDK2_ARCH)_PREFIX=$(AARCH64_CROSS_COMPILE) \
@@ -130,13 +130,12 @@ endef
 
 
 UEFI_TOOLS_DIR ?= $(ROOT)/uefi-tools
-TMP_EDK2_BUILD ?= DEBUG
 
 .PHONY: edk2
 edk2:
 	cd $(EDK2_PATH) && rm -rf OpenPlatformPkg && \
 		ln -s $(OPENPLATPKG_PATH)
-	cd $(EDK2_PATH) && $(UEFI_TOOLS_DIR)/edk2-build.sh -v -b $(TMP_EDK2_BUILD) -e $(EDK2_PATH) \
+	cd $(EDK2_PATH) && $(UEFI_TOOLS_DIR)/edk2-build.sh -v -b $(EDK2_BUILD) -e $(EDK2_PATH) \
 		-a $(ARM_TF_PATH) -c $(ROOT)/build/platforms.config hikey970
 	# set -e && cd $(EDK2_PATH) && source edksetup.sh && \
 	# 	$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools && \
