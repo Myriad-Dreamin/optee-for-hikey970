@@ -150,3 +150,96 @@ gcc: error: brotli/c/enc/utf8_util.o: No such file or directory
 ```
 git submodule update --init
 ```
+
+#### OP-TEE Software Memory Mapping
+
+发生以下报错：
+
+```
+In file included from core/arch/arm/include/mm/core_mmu.h:18,
+                 from core/arch/arm/kernel/thread_private.h:12,
+                 from core/arch/arm/kernel/asm-defines.c:12:
+core/arch/arm/plat-hikey/./platform_config.h:43:2: error: #error Unknown HiKey PLATFORM_FLAVOR
+ #error Unknown HiKey PLATFORM_FLAVOR
+  ^~~~~
+core/arch/arm/plat-hikey/./platform_config.h:151:2: error: #error Unknown HiKey PLATFORM_FLAVOR
+ #error Unknown HiKey PLATFORM_FLAVOR
+  ^~~~~
+mk/compile.mk:245: recipe for target 'out/arm/core/include/generated/.asm-defines.s' failed
+make[1]: *** [out/arm/core/include/generated/.asm-defines.s] Error 1
+make[1]: Leaving directory '/home/kamiyoru/work/c/hikey/hikey970/optee_os'
+```
+
+原因是OP-TEE现在没有添加`hikey970`的支持
+
+解决办法：
+
+根据官方在Linux工作者的Blog中介绍[HiKey970 Mainlining Update - Part 1](https://www.96boards.org/blog/hikey970-mainlining-update-part1/)
+
+`UART-6`是console UART，`base-address`为`0xFFF32000`，接口频率为`serial6:115200n8`，使用ARM标准IP`PL011`。很好，至少我们知道接口频率是我们目前“已经可以运行的”系统的正确配置。
+
+据此我们暂时如下配置：
+
+```c
+#if defined(PLATFORM_FLAVOR_hikey960)
+// ...
+// after hikey960
+#elif defined(PLATFORM_FLAVOR_hikey970)
+
+#define PL011_UART6_BASE	0xFFF32000
+#if (CFG_CONSOLE_UART == 6)
+#define CONSOLE_UART_BASE	PL011_UART6_BASE
+#else
+#error Unknown console UART
+#endif
+#endif
+```
+
+由于不清楚是否能配置为`UART-5`等其他UART，我们这里暂时不添加其他的判断。
+
+> In order to fully make use of this high potential board, I started the work towards upstreaming the SoC and board support in Linux kernel in my spare time. Initially, I pushed out the basic SoC and board support patches, which got merged by the HiSilicon platform maintainer! With those patches, the board can boot into initramfs with a console on the onboard UART(6). One of the added advantage of this board compared to other 96Boards is that it offers an onboard UART based on the USB Type-C connector. So developers can make use of it instead of connecting any other Mezzanines for the console.
+
+注意到这里，我仍不确定是否如此配置就能让编译好的系统对Type-C接口正常工作，希望确实能自动帮助转换吧。
+
+其二，我们还要添加内存的映射，但这就有点难了。
+
+根据下面这句话：
+
+> The Kirin970(Hi3670) SoC is just a superset of Hi3660 SoC with an added AI processing element.
+
+姑且将Hikey960的配置复制一份。
+
+```c
+#if defined(PLATFORM_FLAVOR_hikey960)
+// ...
+// after hikey960
+#elif defined(PLATFORM_FLAVOR_hikey970)
+
+/*
+ * Physical address ranges for HiKey970 RAM:
+ * 3G board: 0~3G
+ * 4G board: 0~3G 3~3.5G 8~8.5G
+ * 6G board: 0~3G 4~7G
+ */
+#if (CFG_DRAM_SIZE_GB == 3)
+#define DRAM1_SIZE_NSEC		0x80000000
+#elif (CFG_DRAM_SIZE_GB == 4)
+#define DRAM1_SIZE_NSEC		0xA0000000
+#define DRAM2_BASE		0x200000000
+#define DRAM2_SIZE_NSEC		0x20000000
+#elif (CFG_DRAM_SIZE_GB == 6)
+#define DRAM1_SIZE_NSEC		0x80000000
+#define DRAM2_BASE		0x100000000
+#define DRAM2_SIZE_NSEC		0xC0000000
+#else
+#error Unknown DRAM size
+#endif
+
+#if (CFG_DRAM_SIZE_GB >= 4 && defined(CFG_ARM32_core) && \
+	defined(CFG_CORE_DYN_SHM) && !defined(CFG_LARGE_PHYS_ADDR))
+#error 32-bit TEE with CFG_CORE_DYN_SHM and without CFG_LARGE_PHYS_ADDR \
+	cannot support boards with 4G RAM or more
+#endif
+
+#endif
+```
