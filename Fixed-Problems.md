@@ -71,15 +71,9 @@ DSC=OpenPlatformPkg/Platforms/Hisilicon/HiKey970/HiKey970.dsc
 SCP_BIN=OpenPlatformPkg/Platforms/Hisilicon/HiKey970/Binary/lpm3.img
 ```
 
-#### Compile Failed (未解决)
+#### Compile Failed
 
-```
-GenFw: ERROR 3000: Invalid
-  WriteSections64(): /home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/DEBUG_GCC5/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.dll AARCH64 relative relocations require identical ELF and PE/COFF section offsets
-GenFw: ERROR 3000: Invalid
-  WriteSections64(): /home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/DEBUG_GCC5/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.dll AARCH64 small code model requires identical ELF and PE/COFF section offsets modulo 4 KB.
-make[1]: *** [/home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/DEBUG_GCC5/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.efi] Error 1
-```
+###### Bad definition for symbol '<unknown>'@0 or unsupported symbol type
 
 ```
 GenFw: ERROR 3000: Invalid
@@ -92,6 +86,31 @@ GenFw: ERROR 3000: Invalid
 GNUmakefile:404: recipe for target '/home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/RELEASE_GCC49/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.efi' failed
 make[1]: *** [/home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/RELEASE_GCC49/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.efi] Error 1
 make[1]: Leaving directory '/home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/RELEASE_GCC49/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore'
+```
+
+强制修改编译版本为`DEBUG`可能解决此问题。
+
+###### AARCH64 small code model requires identical ELF and PE/COFF section offsets modulo 4 KB. 
+
+```
+GenFw: ERROR 3000: Invalid
+  WriteSections64(): /home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/DEBUG_GCC5/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.dll AARCH64 relative relocations require identical ELF and PE/COFF section offsets
+GenFw: ERROR 3000: Invalid
+  WriteSections64(): /home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/DEBUG_GCC5/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.dll AARCH64 small code model requires identical ELF and PE/COFF section offsets modulo 4 KB.
+make[1]: *** [/home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/DEBUG_GCC5/AARCH64/ArmPlatformPkg/PrePi/PeiUniCore/DEBUG/ArmPlatformPrePiUniCore.efi] Error 1
+```
+
+
+根据[tianocore-edk2-cbf0065](https://github.com/tianocore/edk2/commit/cbf00651eda6818ca3c76115b8a18e3f6b23eef4)，在第4344行修改：
+
+```
+DEFINE GCC_AARCH64_CC_FLAGS        = DEF(GCC_ALL_CC_FLAGS) -mlittle-endian -fno-short-enums -fverbose-asm -funsigned-char  -ffunction-sections -fdata-sections -fno-builtin -Wno-address -fno-asynchronous-unwind-tables
+```
+
+为
+
+```
+DEFINE GCC_AARCH64_CC_FLAGS        = DEF(GCC_ALL_CC_FLAGS) -mlittle-endian -fno-short-enums -fverbose-asm -funsigned-char  -ffunction-sections -fdata-sections -fno-builtin -Wno-address -fno-asynchronous-unwind-tables -fno-unwind-tables
 ```
 
 #### Brotli Error
