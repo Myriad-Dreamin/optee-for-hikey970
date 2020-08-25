@@ -53,11 +53,14 @@ IMAGE_TOOLS_CONFIG		?=$(OUT_PATH)/config
 PATCHES_PATH			?=$(ROOT)/patches_hikey
 STRACE_PATH			?=$(ROOT)/strace
 
+# UEFI_TOOLS
+UEFI_TOOLS_DIR      ?=$(ROOT)/uefi-tools
+
 ################################################################################
 # Targets
 ################################################################################
 .PHONY: all
-all: arm-tf boot-img lloader
+all: boot-img lloader
 
 .PHONY: clean
 clean: arm-tf-clean buildroot-clean edk2-clean linux-clean optee-os-clean \
@@ -82,7 +85,8 @@ prepare-cleaner:
 ARM_TF_EXPORTS ?= \
 	CROSS_COMPILE="$(CCACHE)$(AARCH64_CROSS_COMPILE)"
 
-# platform changed **!important not verified
+# platform changed should be equals to platforms.config
+# todo: check platforms.config
 ARM_TF_FLAGS ?= \
 	BL32=$(OPTEE_OS_HEADER_V2_BIN) \
 	BL32_EXTRA1=$(OPTEE_OS_PAGER_V2_BIN) \
@@ -93,9 +97,9 @@ ARM_TF_FLAGS ?= \
 	PLAT=hikey970 \
 	SPD=opteed
 
-ifeq ($(CFG_CONSOLE_UART),5)
-	ARM_TF_FLAGS += CRASH_CONSOLE_BASE=PL011_UART5_BASE
-endif
+# ifeq ($(CFG_CONSOLE_UART),5)
+# 	ARM_TF_FLAGS += CRASH_CONSOLE_BASE=PL011_UART5_BASE
+# endif
 
 .PHONY: arm-tf
 arm-tf: optee-os edk2
@@ -126,20 +130,19 @@ define edk2-call
 	build -n `getconf _NPROCESSORS_ONLN` -a $(EDK2_ARCH) \
 		-t $(EDK2_TOOLCHAIN) -p $(EDK2_DSC) \
 		-b $(EDK2_BUILD) $(EDK2_BUILDFLAGS)
-endef		
-
-
-UEFI_TOOLS_DIR ?= $(ROOT)/uefi-tools
+endef
 
 .PHONY: edk2
-edk2:
+edk2: optee-os
 	cd $(EDK2_PATH) && rm -rf OpenPlatformPkg && \
 		ln -s $(OPENPLATPKG_PATH)
 	cd $(EDK2_PATH) && $(UEFI_TOOLS_DIR)/edk2-build.sh -v -b $(EDK2_BUILD) -e $(EDK2_PATH) \
-		-a $(ARM_TF_PATH) -c $(ROOT)/build/platforms.config hikey970
-	# set -e && cd $(EDK2_PATH) && source edksetup.sh && \
-	# 	$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools && \
-	# 	$(call edk2-call)
+		-c $(ROOT)/build/platforms.config hikey970
+
+# -a $(ARM_TF_PATH) 
+# set -e && cd $(EDK2_PATH) && source edksetup.sh && \
+# 	$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools && \
+# 	$(call edk2-call)
 
 .PHONY: edk2-clean
 edk2-clean:
@@ -196,10 +199,14 @@ linux-cleaner: linux-cleaner-common
 ################################################################################
 
 ### OPTEE_OS PLATFORM
-OPTEE_OS_COMMON_FLAGS += PLATFORM=hikey-hikey$$$$$$$$ \
+
+# updated core/arch/arm/plat-hikey/./platform_config.h
+# added CFG_DRAM_SIZE_GB
+OPTEE_OS_COMMON_FLAGS += PLATFORM=hikey-hikey970 \
 			CFG_CONSOLE_UART=$(CFG_CONSOLE_UART) \
-			CFG_SECURE_DATA_PATH=n
-OPTEE_OS_CLEAN_COMMON_FLAGS += PLATFORM=hikey-hikey$$$$$$$$
+			CFG_SECURE_DATA_PATH=n\
+			CFG_DRAM_SIZE_GB=6
+OPTEE_OS_CLEAN_COMMON_FLAGS += PLATFORM=hikey-hikey970
 
 .PHONY: optee-os
 optee-os: optee-os-common
@@ -283,14 +290,16 @@ boot-img-clean:
 .PHONY: lloader
 lloader: arm-tf edk2
 	cd $(LLOADER_PATH) && \
-		ln -sf $(ARM_TF_PATH)/build/hikey$$$$$$$$/$(ARM_TF_BUILD)/bl1.bin && \
-		ln -sf $(ARM_TF_PATH)/build/hikey$$$$$$$$/$(ARM_TF_BUILD)/bl2.bin && \
+		ln -sf $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)/bl1.bin && \
+		ln -sf $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)/bl2.bin && \
+		ln -sf $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)/fip.bin && \
 		ln -sf $(EDK2_BIN) && \
-		$(MAKE) hikey$$$$$$$$ PTABLE_LST=linux-32g
+		$(MAKE) hikey970 
+	# PTABLE_LST=linux-32g
 
 .PHONY: lloader-clean
 lloader-clean:
-	$(MAKE) -C $(LLOADER_PATH) hikey$$$$$$$$-clean
+	$(MAKE) -C $(LLOADER_PATH) hikey970-clean
 
 ################################################################################
 # Flash

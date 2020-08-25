@@ -126,4 +126,18 @@ Copying images to '/home/kamiyoru/work/c/hikey/hikey970/edk2/Build/HiKey970/RELE
 pass	1
 fail	0
 ```
+#### Step 2: Install fastboot (Linux)
+
+```bash
+sudo apt-get update
+sudo apt-get install android-tools-fastboot  # on Debian/Ubuntu
+```
+
+or
+
+```bash
+sudo yum update
+sudo yun install android-tools               # on Fedora, CentOS
+```
+
 
