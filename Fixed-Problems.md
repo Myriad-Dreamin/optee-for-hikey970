@@ -243,3 +243,17 @@ make[1]: Leaving directory '/home/kamiyoru/work/c/hikey/hikey970/optee_os'
 
 #endif
 ```
+
+#### 发送数据后设备无法进入fastboot模式
+
+当发送数据以后，执行`fastboot devices`时显示`<waiting for any device>`或者不显示任何设备。
+
+原因是写入的image不正确。
+
+解决办法：
+
+要求只有两点：
+
+1. arm-trusted-firmware编译为Release版本
+
+2. 其他编译为Debug版本

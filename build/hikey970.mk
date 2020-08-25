@@ -21,12 +21,14 @@ include common.mk
 ################################################################################
 # Paths to git projects and various binaries
 ################################################################################
+DEBUG = 1
+
 ARM_TF_PATH			?= $(ROOT)/arm-trusted-firmware
-ifeq ($(DEBUG),1)
-ARM_TF_BUILD			?= debug
-else
+# ifeq ($(DEBUG),1)
+# ARM_TF_BUILD			?= debug
+# else
 ARM_TF_BUILD			?= release
-endif
+# endif
 
 EDK2_PATH 			?= $(ROOT)/edk2
 ifeq ($(DEBUG),1)
@@ -36,7 +38,8 @@ EDK2_BUILD			?= RELEASE
 endif
 
 ## UEFI Changed
-EDK2_BIN			?= $(EDK2_PATH)/Build/HiKey970/$(EDK2_BUILD)_$(EDK2_TOOLCHAIN)/FV/BL33_AP_UEFI.fd
+EDK2_OUT_PATH       ?= $(EDK2_PATH)/Build/HiKey970/$(EDK2_BUILD)_$(EDK2_TOOLCHAIN)/FV/
+EDK2_BIN			?= $(EDK2_OUT_PATH)/BL33_AP_UEFI.fd
 OPENPLATPKG_PATH		?= $(ROOT)/OpenPlatformPkg
 
 OUT_PATH			?=$(ROOT)/out
@@ -85,6 +88,8 @@ prepare-cleaner:
 ARM_TF_EXPORTS ?= \
 	CROSS_COMPILE="$(CCACHE)$(AARCH64_CROSS_COMPILE)"
 
+ARM_TF_OUT_PATH ?= $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)
+
 # platform changed should be equals to platforms.config
 # todo: check platforms.config
 ARM_TF_FLAGS ?= \
@@ -93,17 +98,21 @@ ARM_TF_FLAGS ?= \
 	BL32_EXTRA2=$(OPTEE_OS_PAGEABLE_V2_BIN) \
 	BL33=$(EDK2_BIN) \
 	SCP_BL2=$(MCUIMAGE_BIN) \
-	DEBUG=$(DEBUG) \
 	PLAT=hikey970 \
 	SPD=opteed
+
+#	DEBUG=$(DEBUG)
 
 # ifeq ($(CFG_CONSOLE_UART),5)
 # 	ARM_TF_FLAGS += CRASH_CONSOLE_BASE=PL011_UART5_BASE
 # endif
 
 .PHONY: arm-tf
-arm-tf: optee-os edk2
+arm-tf: # optee-os edk2
 	$(ARM_TF_EXPORTS) $(MAKE) -C $(ARM_TF_PATH) $(ARM_TF_FLAGS) all fip
+	# cp -a $(ARM_TF_OUT_PATH)/bl1.bin $(EDK2_OUT_PATH)
+	# cp -a $(ARM_TF_OUT_PATH)/bl2.bin $(EDK2_OUT_PATH)
+	# cp -a $(ARM_TF_OUT_PATH)/fip.bin $(EDK2_OUT_PATH)
 
 .PHONY: arm-tf-clean
 arm-tf-clean:
@@ -132,8 +141,9 @@ define edk2-call
 		-b $(EDK2_BUILD) $(EDK2_BUILDFLAGS)
 endef
 
+
 .PHONY: edk2
-edk2: optee-os
+edk2: # optee-os
 	cd $(EDK2_PATH) && rm -rf OpenPlatformPkg && \
 		ln -s $(OPENPLATPKG_PATH)
 	cd $(EDK2_PATH) && $(UEFI_TOOLS_DIR)/edk2-build.sh -v -b $(EDK2_BUILD) -e $(EDK2_PATH) \
@@ -146,21 +156,21 @@ edk2: optee-os
 
 .PHONY: edk2-clean
 edk2-clean:
-	set -e && cd $(EDK2_PATH) && source edksetup.sh && \
-		$(call edk2-call) cleanall && \
-		$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools clean
 	rm -rf $(EDK2_PATH)/Build
 	rm -rf $(EDK2_PATH)/Conf/.cache
 	rm -f $(EDK2_PATH)/Conf/build_rule.txt
 	rm -f $(EDK2_PATH)/Conf/target.txt
 	rm -f $(EDK2_PATH)/Conf/tools_def.txt
+	set -e && cd $(EDK2_PATH) && source edksetup.sh && \
+		$(call edk2-call) cleanall && \
+		$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools clean
 
 ################################################################################
 # Linux kernel
 ################################################################################
 LINUX_DEFCONFIG_COMMON_ARCH ?= arm64
 LINUX_DEFCONFIG_COMMON_FILES ?= $(LINUX_PATH)/arch/arm64/configs/defconfig \
-				$(CURDIR)/kconfigs/hikey$$$$$$$$.conf \
+				$(CURDIR)/kconfigs/hikey970.conf \
 				$(PATCHES_PATH)/kernel_config/usb_net_dm$$$$$$$$1.conf \
 				$(PATCHES_PATH)/kernel_config/ftrace.conf
 
@@ -174,7 +184,7 @@ linux-gen_init_cpio: linux-defconfig
 		ARCH=arm64 \
 		LOCALVERSION= \
 		gen_init_cpio
-
+ 
 # ?, device tree b
 LINUX_COMMON_FLAGS += ARCH=arm64 Image modules hisilicon/hi3660-hikey$$$$$$$$.dtb
 
@@ -287,15 +297,19 @@ boot-img-clean:
 ################################################################################
 # l-loader
 ################################################################################
+
+# LLOADER_BL_PATH ?= $(EDK2_OUT_PATH)
+LLOADER_BL_PATH ?= $(ARM_TF_OUT_PATH)
+# arm-tf edk2
+
 .PHONY: lloader
-lloader: arm-tf edk2
+lloader:
 	cd $(LLOADER_PATH) && \
-		ln -sf $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)/bl1.bin && \
-		ln -sf $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)/bl2.bin && \
-		ln -sf $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)/fip.bin && \
+		ln -sf $(LLOADER_BL_PATH)/bl1.bin && \
+		ln -sf $(LLOADER_BL_PATH)/bl2.bin && \
+		ln -sf $(LLOADER_BL_PATH)/fip.bin && \
 		ln -sf $(EDK2_BIN) && \
-		$(MAKE) hikey970 
-	# PTABLE_LST=linux-32g
+		$(MAKE) hikey970 PTABLE_LST=linux-64g
 
 .PHONY: lloader-clean
 lloader-clean:
@@ -305,22 +319,34 @@ lloader-clean:
 # Flash
 ################################################################################
 define flash_help
-	@read -r -p "Connect HiKey$$$$$$$$ to power up (press enter)" dummy
+	@read -r -p "Connect HiKey970 to power up (press enter)" dummy
 	@read -r -p "Connect USB OTG cable, the micro USB cable (press enter)" dummy
 endef
 
+# ./sec_usb_xloader.img 0x00022000
+# ./sec_usb_xloader2.img 0x60049000
+# ./l-loader.bin 0x16800000
+
+
+RAW_IMAGE_TOOLS_CONFIG ?= $(IMAGE_TOOLS_PATH)/config
+
 .PHONY: recov_cfg
 recov_cfg:
-	@echo "./hisi-sec_usb_xloader.img 0x00020000" > $(IMAGE_TOOLS_CONFIG)
-	@echo "./hisi-sec_uce_boot.img 0x6A908000" >> $(IMAGE_TOOLS_CONFIG)
-	@echo "./recovery.bin 0x1AC00000" >> $(IMAGE_TOOLS_CONFIG)
+	@mkdir -p $(OUT_PATH)
+	@cp $(RAW_IMAGE_TOOLS_CONFIG) $(IMAGE_TOOLS_CONFIG)
+
+# @echo "./hisi-sec_usb_xloader.img 0x00020000" > $(IMAGE_TOOLS_CONFIG)
+# @echo "./hisi-sec_uce_boot.img 0x6A908000" >> $(IMAGE_TOOLS_CONFIG)
+# @echo "./recovery.bin 0x1AC00000" >> $(IMAGE_TOOLS_CONFIG)
 
 .PHONY: recovery
 recovery: recov_cfg
+	cd $(IMAGE_TOOLS_PATH) &&\
+		ln -sf $(ARM_TF_PATH)/build/hikey970/$(ARM_TF_BUILD)/fip.bin
 	@echo "Enter recovery mode to flash a new bootloader"
 	@echo
 	@echo "Make sure udev permissions are set appropriately:"
-	@echo "  # /etc/udev/rules.d/hikey$$$$$$$$.rules"
+	@echo "  # /etc/udev/rules.d/hikey970.rules"
 	@echo '  SUBSYSTEM=="usb", ATTRS{idVendor}=="18d1", ATTRS{idProduct}=="d00d", MODE="0666"'
 	@echo '  SUBSYSTEM=="usb", ATTRS{idVendor}=="12d1", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1"'
 	@echo
@@ -333,13 +359,15 @@ recovery: recov_cfg
 	$(call flash_help)
 	@echo
 	@echo "Check the device node (/dev/ttyUSBx) of the micro USB connection"
-	@echo "Note the value x of the device node. Default is 1"
-	@read -r -p "Enter the device node. Press enter for /dev/ttyUSB1: " DEV && \
-		DEV=$${DEV:-/dev/ttyUSB1} && \
+	@echo "Note the value x of the device node. Default is 0"
+	@read -r -p "Enter the device node. Press enter for /dev/ttyUSB0: " -i "/dev/ttyUSB0" DEV && \
 		cd $(IMAGE_TOOLS_PATH) && \
-		ln -sf $(LLOADER_PATH)/recovery.bin && \
-		sudo ./hikey_idt -c $(IMAGE_TOOLS_CONFIG) -p $$DEV && \
+		ln -sf $(LLOADER_PATH)/l-loader.bin && \
+		echo "sudo python hisi-idt.py -d $$DEV --img1 ./sec_usb_xloader.img --img2 ./sec_usb_xloader2.img --img3 ./l-loader.bin" &&\
+		sudo python hisi-idt.py -d $$DEV --img1 ./sec_usb_xloader.img --img2 ./sec_usb_xloader2.img --img3 ./l-loader.bin\
 		rm -f $(IMAGE_TOOLS_CONFIG)
+
+	# sudo ./hikey_idt -c $(IMAGE_TOOLS_CONFIG) -p $$DEV &&
 	@echo
 	@echo "If you see dots starting to appear on the console,"
 	@echo "press f ON THE CONSOLE (NOT HERE!) to run fastboot."
@@ -368,9 +396,9 @@ endif
 	@echo "so please wait ~10 seconds."
 	@read -r -p "Then press enter to continue flashing" dummy
 	@echo
-	fastboot flash ptable $(LLOADER_PATH)/prm_ptable.img
-	fastboot flash xloader $(IMAGE_TOOLS_PATH)/hisi-sec_xloader.img
-	fastboot flash fastboot $(LLOADER_PATH)/l-loader.bin
-	fastboot flash fip $(ARM_TF_PATH)/build/hikey$$$$$$$$/$(ARM_TF_BUILD)/fip.bin
-	fastboot flash nvme $(IMAGE_TOOLS_PATH)/hisi-nvme.img
-	fastboot flash boot $(BOOT_IMG)
+	# fastboot flash ptable $(LLOADER_PATH)/prm_ptable.img
+	# fastboot flash xloader $(IMAGE_TOOLS_PATH)/hisi-sec_xloader.img
+	fastboot flash fastboot $(IMAGE_TOOLS_PATH)/l-loader.bin
+	fastboot flash fip $(IMAGE_TOOLS_PATH)/fip.bin
+	# fastboot flash nvme $(IMAGE_TOOLS_PATH)/hisi-nvme.img
+	# fastboot flash boot $(BOOT_IMG)
